@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routers import auth, sweets
+from app.database import Base, engine   # ✅ ADD THIS
+
+# ✅ CREATE TABLES ON STARTUP (CRITICAL)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# ✅ ADD THIS CORS CONFIG
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # frontend URL
+    allow_origins=["*"],  # allow frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
