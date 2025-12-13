@@ -2,16 +2,36 @@
 from sqlalchemy.orm import Session
 from . import models, schemas, auth as _auth
 
-def create_user(db: Session, username: str, password: str, is_admin: bool=False):
-    hashed = _auth.get_password_hash(password)
-    user = models.User(username=username, hashed_password=hashed, is_admin=is_admin)
+
+# ======================
+# USER CRUD
+# ======================
+
+def create_user(
+    db: Session,
+    username: str,
+    password: str,
+    is_admin: bool = False
+):
+    hashed_password = _auth.get_password_hash(password)
+    user = models.User(
+        username=username,
+        hashed_password=hashed_password,
+        is_admin=is_admin
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
 
+
 def get_user_by_username(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
+    return (
+        db.query(models.User)
+        .filter(models.User.username == username)
+        .first()
+    )
+
 
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
@@ -21,53 +41,77 @@ def authenticate_user(db: Session, username: str, password: str):
         return None
     return user
 
-# Sweets CRUD
+
+# ======================
+# SWEETS CRUD
+# ======================
+
 def create_sweet(db: Session, sweet: schemas.SweetCreate):
-    db_sweet = models.Sweet(**sweet.dict())
+    db_sweet = models.Sweet(**sweet.model_dump())
     db.add(db_sweet)
     db.commit()
     db.refresh(db_sweet)
     return db_sweet
 
-def get_sweets(db: Session, skip: int=0, limit: int=100):
-    return db.query(models.Sweet).offset(skip).limit(limit).all()
+
+def get_sweets(db: Session, skip: int = 0, limit: int = 100):
+    return (
+        db.query(models.Sweet)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
 
 def get_sweet(db: Session, sweet_id: int):
-    return db.query(models.Sweet).filter(models.Sweet.id == sweet_id).first()
+    return (
+        db.query(models.Sweet)
+        .filter(models.Sweet.id == sweet_id)
+        .first()
+    )
+
 
 def update_sweet(db: Session, sweet_id: int, data: dict):
-    s = get_sweet(db, sweet_id)
-    if not s:
+    sweet = get_sweet(db, sweet_id)
+    if not sweet:
         return None
+
     for key, value in data.items():
         if value is not None:
-            setattr(s, key, value)
+            setattr(sweet, key, value)
+
     db.commit()
-    db.refresh(s)
-    return s
+    db.refresh(sweet)
+    return sweet
+
 
 def delete_sweet(db: Session, sweet_id: int):
-    s = get_sweet(db, sweet_id)
-    if not s:
+    sweet = get_sweet(db, sweet_id)
+    if not sweet:
         return False
-    db.delete(s)
+
+    db.delete(sweet)
     db.commit()
     return True
 
-def purchase_sweet(db: Session, sweet_id: int, qty: int=1):
-    s = get_sweet(db, sweet_id)
-    if not s or s.quantity < qty:
-        return None
-    s.quantity -= qty
-    db.commit()
-    db.refresh(s)
-    return s
 
-def restock_sweet(db: Session, sweet_id: int, qty: int=1):
-    s = get_sweet(db, sweet_id)
-    if not s:
+def purchase_sweet(db: Session, sweet_id: int, qty: int = 1):
+    sweet = get_sweet(db, sweet_id)
+    if not sweet or sweet.quantity < qty:
         return None
-    s.quantity += qty
+
+    sweet.quantity -= qty
     db.commit()
-    db.refresh(s)
-    return s
+    db.refresh(sweet)
+    return sweet
+
+
+def restock_sweet(db: Session, sweet_id: int, qty: int = 1):
+    sweet = get_sweet(db, sweet_id)
+    if not sweet:
+        return None
+
+    sweet.quantity += qty
+    db.commit()
+    db.refresh(sweet)
+    return sweet
