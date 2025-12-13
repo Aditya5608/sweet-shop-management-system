@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export async function apiRequest(
   endpoint: string,
@@ -6,10 +6,15 @@ export async function apiRequest(
   body?: any,
   token?: string | null
 ) {
-  const headers: any = { "Content-Type": "application/json" };
-  if (token) headers["token"] = token;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-  const res = await fetch(API_URL + endpoint, {
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
